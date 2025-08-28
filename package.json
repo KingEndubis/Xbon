@@ -1,0 +1,21 @@
+{
+  "name": "gold-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "description": "Monorepo for web and mobile apps managing gold deals with broker chains",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.6",
+    "husky": "^9.1.6"
+  }
+}

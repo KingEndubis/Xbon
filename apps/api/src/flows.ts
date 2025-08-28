@@ -1,0 +1,212 @@
+import { Body, Controller, Get, Injectable, NotFoundException, Param, Patch, Post } from '@nestjs/common';
+import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+import { Type } from 'class-transformer';
+
+export type DealStatus = 'initiated' | 'kYC' | 'contracted' | 'inspection' | 'payment' | 'shipped' | 'closed' | 'cancelled';
+export type Commodity = 'gold' | 'silver' | 'oil' | 'diamond'
+export type Exclusivity = 'standard' | 'exclusive' | 'premier'
+
+export class CreateAgentDto {
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  parentAgentId?: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  parentAgentId?: string;
+}
+
+export class CreateDealDto {
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsIn(['gold', 'silver', 'oil', 'diamond'])
+  @IsString()
+  commodity!: Commodity;
+
+  @IsIn(['standard', 'exclusive', 'premier'])
+  @IsString()
+  exclusivity!: Exclusivity;
+
+  @IsNumber()
+  quantityKg!: number;
+
+  @IsNumber()
+  pricePerKg!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  location!: string;
+
+  @IsString()
+  @IsOptional()
+  details?: string; // will be encrypted
+
+  @IsArray()
+  @IsString({ each: true })
+  participants!: string[]; // agent ids in chain order (buyer/seller/brokers)
+}
+
+export class UpdateStatusDto {
+  @IsString()
+  @IsNotEmpty()
+  status!: DealStatus;
+}
+
+export interface Deal {
+  id: string;
+  title: string;
+  commodity: Commodity;
+  exclusivity: Exclusivity;
+  quantityKg: number;
+  pricePerKg: number;
+  location: string;
+  encryptedDetails?: string; // base64
+  iv?: string; // base64
+  chain: string[]; // agent ids in order
+  status: DealStatus;
+  history: { status: DealStatus; at: string }[];
+  createdAt: string;
+}
+
+@Injectable()
+export class AgentsService {
+  private agents: Agent[] = [];
+
+  create(dto: CreateAgentDto): Agent {
+    const agent: Agent = { id: uuidv4(), name: dto.name, parentAgentId: dto.parentAgentId };
+    this.agents.push(agent);
+    return agent;
+  }
+
+  list(): Agent[] {
+    return this.agents;
+  }
+
+  get(id: string): Agent {
+    const a = this.agents.find(x => x.id === id);
+    if (!a) throw new NotFoundException('Agent not found');
+    return a;
+  }
+}
+
+function getKey(): Buffer {
+  const key = process.env.ENCRYPTION_KEY || '';
+  if (!key) {
+    // Derive a deterministic dev key to avoid crashes (not for production)
+    return crypto.createHash('sha256').update('dev-key').digest();
+  }
+  // Expect hex or base64; normalize to 32-byte key
+  try {
+    const b = Buffer.from(key, 'base64');
+    if (b.length === 32) return b;
+  } catch {}
+  try {
+    const b = Buffer.from(key, 'hex');
+    if (b.length === 32) return b;
+  } catch {}
+  return crypto.createHash('sha256').update(key).digest();
+}
+
+function encrypt(text?: string): { cipher?: string; iv?: string } {
+  if (!text) return {};
+  const iv = crypto.randomBytes(12);
+  const key = getKey();
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const enc = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return { cipher: Buffer.concat([enc, tag]).toString('base64'), iv: iv.toString('base64') };
+}
+
+@Injectable()
+export class DealsService {
+  private deals: Deal[] = [];
+
+  create(dto: CreateDealDto): Deal {
+    const id = uuidv4();
+    const { cipher, iv } = encrypt(dto.details);
+    const now = new Date().toISOString();
+    const deal: Deal = {
+      id,
+      title: dto.title,
+      commodity: dto.commodity,
+      exclusivity: dto.exclusivity,
+      quantityKg: dto.quantityKg,
+      pricePerKg: dto.pricePerKg,
+      location: dto.location,
+      encryptedDetails: cipher,
+      iv,
+      chain: dto.participants,
+      status: 'initiated',
+      history: [{ status: 'initiated', at: now }],
+      createdAt: now,
+    };
+    this.deals.push(deal);
+    return deal;
+  }
+
+  list(): Deal[] { return this.deals; }
+
+  get(id: string): Deal {
+    const d = this.deals.find(x => x.id === id);
+    if (!d) throw new NotFoundException('Deal not found');
+    return d;
+  }
+
+  updateStatus(id: string, status: DealStatus): Deal {
+    const d = this.get(id);
+    d.status = status;
+    d.history.push({ status, at: new Date().toISOString() });
+    return d;
+  }
+}
+
+@Controller('agents')
+export class AgentsController {
+  constructor(private readonly agents: AgentsService) {}
+
+  @Post()
+  create(@Body() body: CreateAgentDto) { return this.agents.create(body); }
+
+  @Get()
+  list() { return this.agents.list(); }
+
+  @Get(':id')
+  get(@Param('id') id: string) { return this.agents.get(id); }
+}
+
+class CreateDealBody {
+  @ValidateNested()
+  @Type(() => CreateDealDto)
+  data!: CreateDealDto;
+}
+
+@Controller('deals')
+export class DealsController {
+  constructor(private readonly deals: DealsService, private readonly agents: AgentsService) {}
+
+  @Post()
+  create(@Body() body: CreateDealDto) {
+    // ensure agents exist in chain
+    body.participants.forEach(id => this.agents.get(id));
+    return this.deals.create(body);
+  }
+
+  @Get()
+  list() { return this.deals.list(); }
+
+  @Get(':id')
+  get(@Param('id') id: string) { return this.deals.get(id); }
+
+  @Patch(':id/status')
+  setStatus(@Param('id') id: string, @Body() body: UpdateStatusDto) { return this.deals.updateStatus(id, body.status); }
+}
