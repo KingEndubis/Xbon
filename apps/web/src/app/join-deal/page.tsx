@@ -1,7 +1,7 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -24,9 +24,9 @@ interface Agent {
   parentAgentId?: string
 }
 
-export default function JoinDealPage() {
-  const params = useParams()
+function JoinDealContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [deal, setDeal] = useState<Deal | null>(null)
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState('')
@@ -34,7 +34,7 @@ export default function JoinDealPage() {
   const [error, setError] = useState('')
   const [joining, setJoining] = useState(false)
 
-  const inviteCode = params.code as string
+  const inviteCode = searchParams.get('code') || ''
 
   useEffect(() => {
     async function fetchDealAndAgents() {
@@ -49,8 +49,8 @@ export default function JoinDealPage() {
         const agentsRes = await fetch(`${API_URL}/agents`)
         const agentsData = await agentsRes.json()
         setAgents(agentsData)
-      } catch (err: any) {
-        setError(err.message || 'Failed to load deal information')
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load deal information')
       } finally {
         setLoading(false)
       }
@@ -84,8 +84,8 @@ export default function JoinDealPage() {
 
       // Redirect to main dashboard
       router.push('/?joined=true')
-    } catch (err: any) {
-      setError(err.message || 'Failed to join deal')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to join deal')
     } finally {
       setJoining(false)
     }
@@ -125,7 +125,7 @@ export default function JoinDealPage() {
         <div className="text-center mb-8">
           <div className="text-4xl mb-4">🤝</div>
           <h1 className="text-white text-2xl font-bold mb-2">Exclusive Deal Invitation</h1>
-          <p className="text-gray-300">You've been invited to join a premium commodity deal</p>
+          <p className="text-gray-300">You&apos;ve been invited to join a premium commodity deal</p>
         </div>
 
         {deal && (
@@ -203,5 +203,17 @@ export default function JoinDealPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function JoinDealPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    }>
+      <JoinDealContent />
+    </Suspense>
   )
 }

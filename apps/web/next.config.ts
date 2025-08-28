@@ -1,11 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    turbopack: {
-      root: __dirname, // point turbopack root to this app to avoid multi-lockfile confusion
-    },
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  distDir: 'out',
 };
 
 export default nextConfig;

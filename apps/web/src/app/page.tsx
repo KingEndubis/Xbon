@@ -65,7 +65,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null)
-  const [token, setToken] = useState<string | null>(null)
 
   // Agent form state
   const [agentName, setAgentName] = useState("")
@@ -129,7 +128,6 @@ export default function Home() {
     const u = localStorage.getItem("auth_user")
     if (t && u) {
       try {
-        setToken(t)
         setUser(JSON.parse(u))
       } catch {}
     }
@@ -145,7 +143,6 @@ export default function Home() {
 
   function handleSignedIn(u: { id: string; name: string; email: string }, t: string) {
     setUser(u)
-    setToken(t)
     localStorage.setItem("auth_token", t)
     localStorage.setItem("auth_user", JSON.stringify(u))
   }
@@ -163,8 +160,8 @@ export default function Home() {
       setAgentName("")
       setParentAgentId("")
       await fetchAgents()
-    } catch (e: any) {
-      setError(e.message || "Failed to create agent")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to create agent")
     }
   }
 
@@ -206,8 +203,8 @@ export default function Home() {
       setCommodity("gold")
       setExclusivity("exclusive")
       await fetchDeals()
-    } catch (e: any) {
-      setError(e.message || "Failed to create deal")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to create deal")
     }
   }
 
@@ -220,8 +217,8 @@ export default function Home() {
       })
       if (!res.ok) throw new Error(await res.text())
       await fetchDeals()
-    } catch (e: any) {
-      setError(e.message || "Failed to update status")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update status")
     }
   }
 
@@ -264,8 +261,8 @@ export default function Home() {
       fileInput.value = ''
       setSelectedDealId('')
       await fetchDeals()
-    } catch (e: any) {
-      setError(e.message || 'Failed to upload document')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to upload document')
     } finally {
       setUploadingDoc(false)
     }
@@ -298,8 +295,8 @@ export default function Home() {
       setInviteRole('agent')
       setInviteDealId('')
       alert('Invitation sent successfully!')
-    } catch (e: any) {
-      setError(e.message || 'Failed to send invitation')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to send invitation')
     } finally {
       setSendingInvite(false)
     }

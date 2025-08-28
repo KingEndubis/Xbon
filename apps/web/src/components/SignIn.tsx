@@ -69,8 +69,8 @@ export default function SignIn({ onSignIn }: SignInProps) {
       }
       const data = await res.json()
       onSignIn(data.user, data.token)
-    } catch (e: any) {
-      setError(e.message || "Login failed")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Login failed")
     } finally {
       setLoading(false)
     }
@@ -93,8 +93,8 @@ export default function SignIn({ onSignIn }: SignInProps) {
       const data = await res.json()
       setNewUser(data.user)
       setMode("profile")
-    } catch (e: any) {
-      setError(e.message || "Registration failed")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Registration failed")
     } finally {
       setLoading(false)
     }
@@ -118,8 +118,8 @@ export default function SignIn({ onSignIn }: SignInProps) {
       }
       const data = await res.json()
       onSignIn({ ...newUser, profileType }, data.token)
-    } catch (e: any) {
-      setError(e.message || "Profile setup failed")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Profile setup failed")
     } finally {
       setLoading(false)
     }
@@ -213,7 +213,7 @@ export default function SignIn({ onSignIn }: SignInProps) {
                       name="profileType"
                       value={value}
                       checked={profileType === value}
-                      onChange={(e) => setProfileType(e.target.value as any)}
+                      onChange={(e) => setProfileType(e.target.value as 'broker' | 'principal' | 'seller' | 'introducer' | 'buyer')}
                       className="mr-3 text-amber-600"
                     />
                     <span className="text-gray-700">{label}</span>

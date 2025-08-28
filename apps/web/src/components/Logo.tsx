@@ -91,7 +91,6 @@ export function Logo({
               Luxury Commodities Exchange
             </div>
           )}
-+          {size !== "sm" && null}
         </div>
       )}
     </div>
