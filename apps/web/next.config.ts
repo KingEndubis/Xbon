@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   basePath: '/Xbon',
   assetPrefix: '/Xbon/',
+  outputFileTracingRoot: process.cwd(),
   images: {
     unoptimized: true,
   },
