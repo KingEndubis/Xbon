@@ -88,6 +88,8 @@ jobs:
           ls -la ./apps/web/out/
           echo "Verifying index.html exists..."
           test -f ./apps/web/out/index.html && echo "✓ index.html found" || echo "✗ index.html missing"
+          echo "Verifying .nojekyll exists..."
+          test -f ./apps/web/out/.nojekyll && echo "✓ .nojekyll found" || echo "✗ .nojekyll missing"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
