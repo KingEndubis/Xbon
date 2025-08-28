@@ -7,8 +7,12 @@
 1. **Fork/Clone the Repository**
    ```bash
    git clone https://github.com/KingEndubis/Xbon.git
+
+**Live Website:** https://xbon-gold-exchange.vercel.app
    cd Xbon
    ```
+   
+   **Live Website:** [https://xbon-gold-exchange.vercel.app](https://xbon-gold-exchange.vercel.app)
 
 2. **Deploy Frontend to Vercel**
    - Visit [vercel.com](https://vercel.com)

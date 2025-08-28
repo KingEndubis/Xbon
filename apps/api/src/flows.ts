@@ -62,6 +62,44 @@ export class UpdateStatusDto {
   status!: DealStatus;
 }
 
+export class UploadDocumentDto {
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  type!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  content!: string; // base64 encoded file content
+
+  @IsString()
+  @IsNotEmpty()
+  uploadedBy!: string;
+}
+
+export class JoinDealDto {
+  @IsString()
+  @IsNotEmpty()
+  inviteCode!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  agentId!: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  encryptedContent?: string;
+  iv?: string;
+}
+
 export interface Deal {
   id: string;
   title: string;
@@ -75,7 +113,10 @@ export interface Deal {
   chain: string[]; // agent ids in order
   status: DealStatus;
   history: { status: DealStatus; at: string }[];
+  documents: Document[];
+  inviteLink?: string;
   createdAt: string;
+  createdBy: string;
 }
 
 @Injectable()
@@ -131,10 +172,11 @@ function encrypt(text?: string): { cipher?: string; iv?: string } {
 export class DealsService {
   private deals: Deal[] = [];
 
-  create(dto: CreateDealDto): Deal {
+  create(dto: CreateDealDto, createdBy: string): Deal {
     const id = uuidv4();
     const { cipher, iv } = encrypt(dto.details);
     const now = new Date().toISOString();
+    const inviteCode = crypto.randomBytes(16).toString('hex');
     const deal: Deal = {
       id,
       title: dto.title,
@@ -148,7 +190,10 @@ export class DealsService {
       chain: dto.participants,
       status: 'initiated',
       history: [{ status: 'initiated', at: now }],
+      documents: [],
+      inviteLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/join-deal/${inviteCode}`,
       createdAt: now,
+      createdBy,
     };
     this.deals.push(deal);
     return deal;
@@ -167,6 +212,40 @@ export class DealsService {
     d.status = status;
     d.history.push({ status, at: new Date().toISOString() });
     return d;
+  }
+
+  uploadDocument(dealId: string, dto: UploadDocumentDto): Deal {
+    const deal = this.get(dealId);
+    const { cipher, iv } = encrypt(dto.content);
+    const document: Document = {
+      id: uuidv4(),
+      name: dto.name,
+      type: dto.type,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: dto.uploadedBy,
+      encryptedContent: cipher,
+      iv,
+    };
+    deal.documents.push(document);
+    return deal;
+  }
+
+  joinDealByInvite(dto: JoinDealDto): Deal {
+    const deal = this.deals.find(d => d.inviteLink?.includes(dto.inviteCode));
+    if (!deal) throw new NotFoundException('Invalid invite code');
+    
+    // Add agent to deal chain if not already present
+    if (!deal.chain.includes(dto.agentId)) {
+      deal.chain.push(dto.agentId);
+    }
+    
+    return deal;
+  }
+
+  getDealByInviteCode(inviteCode: string): Deal {
+    const deal = this.deals.find(d => d.inviteLink?.includes(inviteCode));
+    if (!deal) throw new NotFoundException('Invalid invite code');
+    return deal;
   }
 }
 
@@ -195,10 +274,10 @@ export class DealsController {
   constructor(private readonly deals: DealsService, private readonly agents: AgentsService) {}
 
   @Post()
-  create(@Body() body: CreateDealDto) {
+  create(@Body() body: CreateDealDto & { createdBy: string }) {
     // ensure agents exist in chain
     body.participants.forEach(id => this.agents.get(id));
-    return this.deals.create(body);
+    return this.deals.create(body, body.createdBy);
   }
 
   @Get()
@@ -209,4 +288,21 @@ export class DealsController {
 
   @Patch(':id/status')
   setStatus(@Param('id') id: string, @Body() body: UpdateStatusDto) { return this.deals.updateStatus(id, body.status); }
+
+  @Post(':id/documents')
+  uploadDocument(@Param('id') id: string, @Body() body: UploadDocumentDto) {
+    return this.deals.uploadDocument(id, body);
+  }
+
+  @Post('join')
+  joinDeal(@Body() body: JoinDealDto) {
+    // ensure agent exists
+    this.agents.get(body.agentId);
+    return this.deals.joinDealByInvite(body);
+  }
+
+  @Get('invite/:code')
+  getDealByInvite(@Param('code') code: string) {
+    return this.deals.getDealByInviteCode(code);
+  }
 }

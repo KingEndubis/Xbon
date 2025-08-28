@@ -19,6 +19,14 @@ type Commodity = "gold" | "silver" | "oil" | "diamond"
 
 type Exclusivity = "standard" | "exclusive" | "premier"
 
+interface Document {
+  id: string
+  name: string
+  type: string
+  uploadedAt: string
+  uploadedBy: string
+}
+
 interface Deal {
   id: string
   title: string
@@ -32,7 +40,10 @@ interface Deal {
   chain: string[]
   status: DealStatus
   history: { status: DealStatus; at: string }[]
+  documents: Document[]
+  inviteLink?: string
   createdAt: string
+  createdBy: string
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
@@ -70,6 +81,16 @@ export default function Home() {
   const [details, setDetails] = useState("")
   const [selectedAgentId, setSelectedAgentId] = useState<string>("")
   const [chain, setChain] = useState<string[]>([])
+
+  // Document upload state
+  const [selectedDealId, setSelectedDealId] = useState('')
+  const [uploadingDoc, setUploadingDoc] = useState(false)
+
+  // Invitation state
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'principal' | 'agent' | 'introducer'>('agent')
+  const [inviteDealId, setInviteDealId] = useState('')
+  const [sendingInvite, setSendingInvite] = useState(false)
 
   const chainAgents = useMemo(
     () => chain.map((id) => agents.find((a) => a.id === id)?.name || id),
@@ -172,6 +193,7 @@ export default function Home() {
           location,
           details,
           participants: chain,
+          createdBy: user?.name || 'Unknown User',
         }),
       })
       if (!res.ok) throw new Error(await res.text())
@@ -201,6 +223,91 @@ export default function Home() {
     } catch (e: any) {
       setError(e.message || "Failed to update status")
     }
+  }
+
+  async function uploadDocument(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedDealId) return
+    
+    const fileInput = document.getElementById('document-file') as HTMLInputElement
+    const file = fileInput?.files?.[0]
+    if (!file) {
+      setError('Please select a file')
+      return
+    }
+
+    setUploadingDoc(true)
+    setError('')
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader()
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string)
+        reader.readAsDataURL(file)
+      })
+
+      const res = await fetch(`${API_URL}/deals/${selectedDealId}/documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: file.name,
+          type: file.type,
+          content: base64.split(',')[1], // Remove data:type;base64, prefix
+          uploadedBy: 'King Endubis' // Current user
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to upload document')
+      
+      // Reset form
+      fileInput.value = ''
+      setSelectedDealId('')
+      await fetchDeals()
+    } catch (e: any) {
+      setError(e.message || 'Failed to upload document')
+    } finally {
+      setUploadingDoc(false)
+    }
+  }
+
+  async function sendInvitation(e: React.FormEvent) {
+    e.preventDefault()
+    if (!inviteEmail) return
+
+    setSendingInvite(true)
+    setError('')
+
+    try {
+      const res = await fetch(`${API_URL}/invites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          role: inviteRole,
+          dealId: inviteDealId || undefined,
+          invitedBy: 'king-endubis-id', // Current user ID
+          invitedByName: 'King Endubis'
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to send invitation')
+      
+      // Reset form
+      setInviteEmail('')
+      setInviteRole('agent')
+      setInviteDealId('')
+      alert('Invitation sent successfully!')
+    } catch (e: any) {
+      setError(e.message || 'Failed to send invitation')
+    } finally {
+      setSendingInvite(false)
+    }
+  }
+
+  function copyInviteLink(link: string) {
+    navigator.clipboard.writeText(link)
+    alert('Invitation link copied to clipboard!')
   }
 
   const brandAccent = useMemo(() => {
@@ -246,12 +353,31 @@ export default function Home() {
             <a href="#dashboard" className="hover:underline underline-offset-4">Dashboard</a>
             <a href="#agents" className="hover:underline underline-offset-4">Agents</a>
             <a href="#create-deal" className="hover:underline underline-offset-4">Create Deal</a>
-            <a href="#deals" className="hover:underline underline-offset-4">Deals</a>
+            <a href="#deals" className="hover:underline underline-offset-4">Active Deals</a>
+            <a href="#documents" className="hover:underline underline-offset-4">Documents</a>
+            <a href="#invitations" className="hover:underline underline-offset-4">Invitations</a>
           </nav>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 grid gap-8">
+        <section className="text-center py-16">
+          <div className="mb-6">
+            <div className="text-6xl mb-4">💎</div>
+            <h1 className="text-4xl font-bold mb-4">X Bon</h1>
+            <p className="text-xl text-gray-600 mb-4">Exclusive Commodities Exchange</p>
+            <div className="text-sm text-gray-500 mb-8">
+              <span className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                🔒 Members Only • 🤝 Verified Network • 🌍 Global Reach
+              </span>
+            </div>
+            <div className="text-xs text-gray-400 max-w-md mx-auto">
+              Access granted exclusively through verified member invitations. 
+              Join a discreet network of commodity professionals worldwide.
+            </div>
+          </div>
+        </section>
+
         {loading && <div className="text-sm text-gray-500">Loading…</div>}
         {error && (
           <div className="rounded border border-red-300 bg-red-50 p-3 text-red-800 text-sm">
@@ -418,6 +544,86 @@ export default function Home() {
             </form>
           </div>
         </section>
+
+        {/* Document Upload Section */}
+        <section id="documents" className="rounded-lg border bg-white p-4 shadow-sm">
+          <h2 className="font-medium text-lg mb-3">📄 Upload Document</h2>
+          <form onSubmit={uploadDocument} className="grid gap-3">
+            <select
+              className="border rounded px-3 py-2"
+              value={selectedDealId}
+              onChange={(e) => setSelectedDealId(e.target.value)}
+              required
+            >
+              <option value="">Select deal...</option>
+              {deals.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title}
+                </option>
+              ))}
+            </select>
+            <input
+              id="document-file"
+              type="file"
+              className="border rounded px-3 py-2"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              required
+            />
+            <button
+              type="submit"
+              disabled={uploadingDoc || !selectedDealId}
+              className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              {uploadingDoc ? 'Uploading...' : 'Upload Document'}
+            </button>
+          </form>
+        </section>
+
+        {/* Invitation Section */}
+        <section id="invitations" className="rounded-lg border bg-white p-4 shadow-sm">
+          <h2 className="font-medium text-lg mb-3">💎 Invite New Member</h2>
+          <form onSubmit={sendInvitation} className="grid gap-3">
+            <input
+              type="email"
+              className="border rounded px-3 py-2"
+              placeholder="Email address"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              required
+            />
+            <select
+              className="border rounded px-3 py-2"
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as 'principal' | 'agent' | 'introducer')}
+            >
+              <option value="agent">Agent</option>
+              <option value="principal">Principal</option>
+              <option value="introducer">Introducer</option>
+            </select>
+            <select
+              className="border rounded px-3 py-2"
+              value={inviteDealId}
+              onChange={(e) => setInviteDealId(e.target.value)}
+            >
+              <option value="">General invitation (no specific deal)</option>
+              {deals.map((d) => (
+                <option key={d.id} value={d.id}>
+                  Invite for: {d.title}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={sendingInvite}
+              className="bg-purple-600 text-white rounded px-4 py-2 hover:bg-purple-700 disabled:bg-gray-400"
+            >
+              {sendingInvite ? 'Sending...' : 'Send Invitation'}
+            </button>
+          </form>
+          <div className="mt-3 text-xs text-gray-500">
+            💎 Exclusive access - Only verified members can invite others
+          </div>
+        </section>
         <section id="deals" className="rounded-lg border bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-medium text-lg">Deals</h2>
@@ -443,20 +649,40 @@ export default function Home() {
                     <th className="py-2 pr-4">Location</th>
                     <th className="py-2 pr-4">Status</th>
                     <th className="py-2 pr-4">Chain</th>
+                    <th className="py-2 pr-4">Documents</th>
+                    <th className="py-2 pr-4">Invite Link</th>
                     <th className="py-2 pr-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {deals.map((d) => (
                     <tr key={d.id} className="border-b align-top">
-                      <td className="py-2 pr-4 font-medium">{d.title}</td>
+                      <td className="py-2 pr-4 font-medium">
+                        {d.title}
+                        <div className="text-[11px] text-gray-500 mt-1">
+                          Created by {d.createdBy} • {new Date(d.createdAt).toLocaleDateString()}
+                        </div>
+                      </td>
                       <td className="py-2 pr-4 capitalize">{d.commodity}</td>
-                      <td className="py-2 pr-4 capitalize">{d.exclusivity}</td>
-                      <td className="py-2 pr-4">{d.quantityKg}</td>
+                      <td className="py-2 pr-4">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
+                          d.exclusivity === 'premier' ? 'bg-purple-100 text-purple-800' :
+                          d.exclusivity === 'exclusive' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {d.exclusivity}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4">{d.quantityKg.toLocaleString()}</td>
                       <td className="py-2 pr-4">${d.pricePerKg.toLocaleString()}</td>
                       <td className="py-2 pr-4">{d.location}</td>
                       <td className="py-2 pr-4">
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
+                          d.status === 'closed' ? 'bg-green-100 text-green-800' :
+                          d.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          d.status === 'initiated' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
                           {d.status}
                         </span>
                         <div className="mt-1 text-[11px] text-gray-500">updated {new Date(d.history.at(-1)?.at || d.createdAt).toLocaleString()}</div>
@@ -464,16 +690,47 @@ export default function Home() {
                       <td className="py-2 pr-4">
                         <ol className="list-decimal ml-4">
                           {d.chain.map((id, idx) => (
-                            <li key={id + idx} className="text-gray-700">
+                            <li key={id + idx} className="text-gray-700 text-xs">
                               {agents.find((a) => a.id === id)?.name || id}
                             </li>
                           ))}
                         </ol>
                       </td>
                       <td className="py-2 pr-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-medium">{d.documents?.length || 0}</span>
+                          <span className="text-xs text-gray-500">docs</span>
+                        </div>
+                        {d.documents && d.documents.length > 0 && (
+                          <div className="mt-1">
+                            {d.documents.slice(0, 2).map((doc) => (
+                              <div key={doc.id} className="text-[10px] text-gray-600 truncate">
+                                📄 {doc.name}
+                              </div>
+                            ))}
+                            {d.documents.length > 2 && (
+                              <div className="text-[10px] text-gray-500">+{d.documents.length - 2} more</div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {d.inviteLink ? (
+                          <button
+                            onClick={() => copyInviteLink(d.inviteLink!)}
+                            className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded transition-colors"
+                            title="Copy invitation link"
+                          >
+                            🔗 Copy Link
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">No link</span>
+                        )}
+                      </td>
+                      <td className="py-2 pr-4">
+                        <div className="flex flex-col gap-1">
                           <select
-                            className="border rounded px-2 py-1"
+                            className="border rounded px-2 py-1 text-xs"
                             defaultValue={d.status}
                             onChange={(e) => updateStatus(d.id, e.target.value as DealStatus)}
                           >
@@ -483,13 +740,6 @@ export default function Home() {
                               </option>
                             ))}
                           </select>
-                          <button
-                            onClick={() => updateStatus(d.id, d.status)}
-                            className="border rounded px-2 py-1 hover:bg-gray-50"
-                            title="Re-apply"
-                          >
-                            Update
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -502,6 +752,19 @@ export default function Home() {
       </main>
 
       <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-gray-500">
+        <div className="mb-4">
+          <a 
+            href="https://xbon-gold-exchange.vercel.app" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-amber-700 hover:to-amber-600 transition-all"
+          >
+            🌐 Visit Live Website
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
         Built for secure, transparent broker chains across gold mines and refineries worldwide.
       </footer>
     </div>

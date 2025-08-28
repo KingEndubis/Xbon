@@ -152,7 +152,7 @@ export default function SignIn({ onSignIn }: SignInProps) {
         <div className="flex flex-col items-center justify-center min-h-[70vh] px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-serif text-gray-800 mb-4">X Bon</h2>
-            <p className="text-gray-600 text-lg max-w-2xl">Exclusive access for verified professionals in luxury commodity trading</p>
+            <p className="text-gray-600 text-lg max-w-2xl">Exclusive access for verified professionals</p>
           </div>
 
           {/* Invitation Link Input */}
@@ -263,9 +263,9 @@ export default function SignIn({ onSignIn }: SignInProps) {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <input
-                type="email"
+                type="text"
                 required
-                placeholder="Email address"
+                placeholder="Username or Email address"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

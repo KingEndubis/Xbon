@@ -1,6 +1,6 @@
-import { Body, Controller, NotFoundException, Post } from '@nestjs/common'
+import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common'
 import { Injectable } from '@nestjs/common'
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator'
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface User {
@@ -12,19 +12,39 @@ export interface User {
 }
 
 export interface Invite {
-  token: string
-  inviterUserId: string
-  inviteeEmail: string
-  used: boolean
+  id: string;
+  email: string;
+  role: 'principal' | 'agent' | 'introducer';
+  invitedBy: string;
+  invitedByName: string;
+  dealId?: string; // Optional: invite specifically for a deal
+  createdAt: string;
+  used: boolean;
+  exclusiveAccess: boolean;
 }
 
 @Injectable()
 export class UsersService {
-  private users: User[] = []
+  private users: User[] = [
+    // Initial hardcoded account
+    {
+      id: 'initial-admin-001',
+      name: 'King Endubis',
+      email: 'king.endubis@xbon.com',
+      passwordHash: '761Kennedy!',
+      profileType: 'principal'
+    }
+  ]
   private tokens = new Map<string, string>() // token -> userId
 
   findByEmail(email: string): User | undefined {
     return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase())
+  }
+  findByEmailOrName(emailOrName: string): User | undefined {
+    const search = emailOrName.toLowerCase()
+    return this.users.find((u) => 
+      u.email.toLowerCase() === search || u.name.toLowerCase() === search
+    )
   }
   findById(id: string): User | undefined {
     return this.users.find((u) => u.id === id)
@@ -60,19 +80,45 @@ export class InvitesService {
   private invites: Invite[] = []
   constructor(private usersService: UsersService) {}
 
-  create(inviterEmail: string, inviteeEmail: string): Invite {
-    const inviter = this.usersService.findByEmail(inviterEmail)
-    if (!inviter) throw new NotFoundException('Inviter must be an existing member')
-    const token = uuidv4()
-    const invite: Invite = { token, inviterUserId: inviter.id, inviteeEmail, used: false }
+  create(invitedBy: string, invitedByName: string, email: string, role: 'principal' | 'agent' | 'introducer', dealId?: string): Invite {
+    const invite: Invite = {
+      id: uuidv4(),
+      email,
+      role,
+      invitedBy,
+      invitedByName,
+      dealId,
+      createdAt: new Date().toISOString(),
+      used: false,
+      exclusiveAccess: true
+    }
     this.invites.push(invite)
     return invite
   }
 
+  findByToken(token: string): Invite | undefined {
+    return this.invites.find(i => i.id === token && !i.used)
+  }
+
+  findByEmail(email: string): Invite | undefined {
+    return this.invites.find(i => i.email === email && !i.used)
+  }
+
+  markUsed(token: string): void {
+    const invite = this.findByToken(token)
+    if (invite) {
+      invite.used = true
+    }
+  }
+
+  list(): Invite[] {
+    return this.invites
+  }
+
   use(token: string, name: string, email: string, password: string): { user: User; token: string } {
-    const invite = this.invites.find((i) => i.token === token)
+    const invite = this.invites.find((i) => i.id === token)
     if (!invite || invite.used) throw new NotFoundException('Invalid or used invite')
-    if (invite.inviteeEmail.toLowerCase() !== email.toLowerCase()) {
+    if (invite.email.toLowerCase() !== email.toLowerCase()) {
       throw new NotFoundException('Invite not issued for this email')
     }
     const user = this.usersService.create(name, email, password)
@@ -92,9 +138,22 @@ class LoginDto {
 
 class InviteCreateDto {
   @IsEmail()
-  inviterEmail!: string
-  @IsEmail()
-  inviteeEmail!: string
+  email!: string
+
+  @IsIn(['principal', 'agent', 'introducer'])
+  role!: 'principal' | 'agent' | 'introducer'
+
+  @IsOptional()
+  @IsString()
+  dealId?: string
+
+  @IsString()
+  @IsNotEmpty()
+  invitedBy!: string
+
+  @IsString()
+  @IsNotEmpty()
+  invitedByName!: string
 }
 
 class RegisterByInviteDto {
@@ -126,7 +185,7 @@ export class AuthController {
 
   @Post('login')
   login(@Body() dto: LoginDto) {
-    const user = this.users.findByEmail(dto.email)
+    const user = this.users.findByEmailOrName(dto.email)
     if (!user || user.passwordHash !== dto.password) {
       throw new NotFoundException('Invalid credentials')
     }
@@ -150,11 +209,22 @@ export class AuthController {
 
 @Controller('invites')
 export class InvitesController {
-  constructor(private invites: InvitesService) {}
+  constructor(private readonly invites: InvitesService) {}
 
   @Post()
-  create(@Body() dto: InviteCreateDto) {
-    const invite = this.invites.create(dto.inviterEmail, dto.inviteeEmail)
-    return { token: invite.token, url: `${process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:3000'}/?invite=${invite.token}` }
+  create(@Body() body: InviteCreateDto) {
+    return this.invites.create(body.invitedBy, body.invitedByName, body.email, body.role, body.dealId)
+  }
+
+  @Get()
+  list() {
+    return this.invites.list()
+  }
+
+  @Get(':token')
+  getByToken(@Param('token') token: string) {
+    const invite = this.invites.findByToken(token)
+    if (!invite) throw new NotFoundException('Invite not found')
+    return invite
   }
 }
