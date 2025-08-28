@@ -1,7 +1,7 @@
 "use client"
 // Updated: Testing GitHub Actions deployment
 import { useEffect, useMemo, useState } from "react"
-import SignIn from "../components/SignIn"
+import SignIn, { User } from "../components/SignIn"
 
 type DealStatus =
   | "initiated"
@@ -23,8 +23,12 @@ interface Document {
   id: string
   name: string
   type: string
+  category?: 'mandate' | 'contract' | 'certificate' | 'proof_of_funds' | 'other'
   uploadedAt: string
   uploadedBy: string
+  aiVerificationStatus?: 'pending' | 'verified' | 'rejected' | 'redacted'
+  redactedContent?: string
+  originalPrincipalInfo?: string
 }
 
 interface Deal {
@@ -83,11 +87,12 @@ export default function Home() {
 
   // Document upload state
   const [selectedDealId, setSelectedDealId] = useState('')
+  const [documentCategory, setDocumentCategory] = useState<'mandate' | 'contract' | 'certificate' | 'proof_of_funds' | 'other'>('mandate')
   const [uploadingDoc, setUploadingDoc] = useState(false)
 
   // Invitation state
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState<'principal' | 'agent' | 'introducer'>('agent')
+  const [inviteRole, setInviteRole] = useState<'introducer' | 'broker' | 'mandate' | 'principal_buyer' | 'principal_seller'>('broker')
   const [inviteDealId, setInviteDealId] = useState('')
   const [sendingInvite, setSendingInvite] = useState(false)
 
@@ -190,7 +195,7 @@ export default function Home() {
           location,
           details,
           participants: chain,
-          createdBy: user?.name || 'Unknown User',
+          createdBy: user?.email || 'Unknown User',
         }),
       })
       if (!res.ok) throw new Error(await res.text())
@@ -250,8 +255,9 @@ export default function Home() {
         body: JSON.stringify({
           name: file.name,
           type: file.type,
+          category: documentCategory,
           content: base64.split(',')[1], // Remove data:type;base64, prefix
-          uploadedBy: 'King Endubis' // Current user
+          uploadedBy: user?.name || 'Unknown User'
         })
       })
 
@@ -559,6 +565,17 @@ export default function Home() {
                 </option>
               ))}
             </select>
+            <select
+              className="border rounded px-3 py-2"
+              value={documentCategory}
+              onChange={(e) => setDocumentCategory(e.target.value as 'mandate' | 'contract' | 'certificate' | 'proof_of_funds' | 'other')}
+            >
+              <option value="mandate">Mandate</option>
+              <option value="contract">Contract</option>
+              <option value="certificate">Certificate</option>
+              <option value="proof_of_funds">Proof of Funds</option>
+              <option value="other">Other</option>
+            </select>
             <input
               id="document-file"
               type="file"
@@ -591,11 +608,13 @@ export default function Home() {
             <select
               className="border rounded px-3 py-2"
               value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as 'principal' | 'agent' | 'introducer')}
+              onChange={(e) => setInviteRole(e.target.value as 'introducer' | 'broker' | 'mandate' | 'principal_buyer' | 'principal_seller')}
             >
-              <option value="agent">Agent</option>
-              <option value="principal">Principal</option>
               <option value="introducer">Introducer</option>
+              <option value="broker">Broker</option>
+              <option value="mandate">Mandate</option>
+              <option value="principal_buyer">Principal Buyer</option>
+              <option value="principal_seller">Principal Seller</option>
             </select>
             <select
               className="border rounded px-3 py-2"
@@ -769,3 +788,4 @@ export default function Home() {
 }
 
 // Deployment trigger: 2025-08-28T09:54:11.586Z
+// Deployment trigger: 2025-08-28T23:12:06.694Z
