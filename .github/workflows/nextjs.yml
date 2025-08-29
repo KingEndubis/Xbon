@@ -7,7 +7,7 @@ name: Deploy Next.js site to Pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master"]
+    branches: ["master", "main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -81,6 +81,8 @@ jobs:
             rm -rf ./apps/web/out
           fi
       - name: Build with Next.js
+        env:
+          GITHUB_PAGES: 'true'
         run: npm run build -w apps/web
       - name: Verify build output
         run: |
