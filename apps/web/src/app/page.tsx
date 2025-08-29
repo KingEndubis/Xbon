@@ -770,7 +770,7 @@ export default function Home() {
       <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-gray-500">
         <div className="mb-4">
           <a 
-            href="https://xbon-gold-exchange.vercel.app" 
+            href="https://kingendubis.github.io/Xbon/" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-amber-700 hover:to-amber-600 transition-all"
