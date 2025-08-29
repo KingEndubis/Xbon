@@ -2,7 +2,9 @@
 
 A secure, transparent platform for managing broker chains across gold mines and refineries worldwide.
 
-🌐 **Live Website:** [https://xbon-gold-exchange.vercel.app](https://xbon-gold-exchange.vercel.app)
+🌐 **Live Websites:**
+- **GitHub Pages (primary):** https://kingendubis.github.io/Xbon/
+- **Vercel (preview):** https://xbon-gold-exchange.vercel.app
 
 ## Features
 
