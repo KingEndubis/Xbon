@@ -8,13 +8,13 @@ export interface User {
   name: string
   email: string
   passwordHash: string // plain for demo only
-  profileType?: 'broker' | 'principal' | 'seller' | 'introducer' | 'buyer'
+  profileType?: 'introducer' | 'broker' | 'mandate' | 'principal_buyer' | 'principal_seller'
 }
 
 export interface Invite {
   id: string;
   email: string;
-  role: 'principal' | 'agent' | 'introducer';
+  role: 'introducer' | 'broker' | 'mandate' | 'principal_buyer' | 'principal_seller';
   invitedBy: string;
   invitedByName: string;
   dealId?: string; // Optional: invite specifically for a deal
@@ -32,7 +32,7 @@ export class UsersService {
       name: 'King Endubis',
       email: 'king.endubis@xbon.com',
       passwordHash: '761Kennedy!',
-      profileType: 'principal'
+      profileType: 'principal_buyer'
     }
   ]
   private tokens = new Map<string, string>() // token -> userId
@@ -55,7 +55,7 @@ export class UsersService {
     this.users.push(user)
     return user
   }
-  updateProfile(userId: string, profileType: 'broker' | 'principal' | 'seller' | 'introducer' | 'buyer'): User {
+  updateProfile(userId: string, profileType: 'introducer' | 'broker' | 'mandate' | 'principal_buyer' | 'principal_seller'): User {
     const user = this.findById(userId)
     if (!user) throw new NotFoundException('User not found')
     user.profileType = profileType
@@ -140,8 +140,8 @@ class InviteCreateDto {
   @IsEmail()
   email!: string
 
-  @IsIn(['principal', 'agent', 'introducer'])
-  role!: 'principal' | 'agent' | 'introducer'
+  @IsIn(['introducer', 'broker', 'mandate', 'principal_buyer', 'principal_seller'])
+  role!: 'introducer' | 'broker' | 'mandate' | 'principal_buyer' | 'principal_seller'
 
   @IsOptional()
   @IsString()
@@ -176,7 +176,7 @@ class UpdateProfileDto {
   userId!: string
   @IsString()
   @IsNotEmpty()
-  profileType!: 'broker' | 'principal' | 'seller' | 'introducer' | 'buyer'
+  profileType!: 'introducer' | 'broker' | 'mandate' | 'principal_buyer' | 'principal_seller'
 }
 
 @Controller('auth')

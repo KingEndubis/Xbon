@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>X Bon - Luxury Commodities Exchange | Xbon</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="X Bon - Luxury Commodities Exchange" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="EXpress Bonifide" />
+<meta property="og:description" content="EXpress Bonifide" />
+<link rel="canonical" href="https://kingendubis.github.io/Xbon/" />
+<meta property="og:url" content="https://kingendubis.github.io/Xbon/" />
+<meta property="og:site_name" content="Xbon" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="X Bon - Luxury Commodities Exchange" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","description":"EXpress Bonifide","headline":"X Bon - Luxury Commodities Exchange","name":"Xbon","url":"https://kingendubis.github.io/Xbon/"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/Xbon/assets/css/style.css?v=19dbb87af0303968e8d030c9d74f88c7761e1b42">
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/Xbon/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+  </head>
+  <body>
+    <div class="container-lg px-3 my-5 markdown-body">
+      
+      <h1><a href="https://kingendubis.github.io/Xbon/">Xbon</a></h1>
+      
+
+      <h1 id="x-bon---luxury-commodities-exchange">X Bon - Luxury Commodities Exchange</h1>
+
+<p>A secure, transparent platform for managing broker chains across gold mines and refineries worldwide.</p>
+
+<p>🌐 <strong>Live Website:</strong> <a href="https://xbon-gold-exchange.vercel.app">https://xbon-gold-exchange.vercel.app</a></p>
+
+<h2 id="features">Features</h2>
+
+<p>🔐 <strong>Invite-Only Authentication</strong> - Secure token-based registration system
+🏗️ <strong>Agent Management</strong> - Create hierarchical broker chains with parent-child relationships
+💎 <strong>Multi-Commodity Trading</strong> - Support for gold, silver, oil, and diamond transactions
+🔒 <strong>Deal Encryption</strong> - Sensitive deal details encrypted with AES-256-GCM
+📊 <strong>Real-time Dashboard</strong> - Live statistics and deal tracking
+🔄 <strong>Status Management</strong> - Complete deal lifecycle from initiation to closure</p>
+
+<h2 id="architecture">Architecture</h2>
+
+<p>This is a monorepo containing:</p>
+<ul>
+  <li><strong>Web App</strong> (Next.js 15 + React 19 + Tailwind CSS)</li>
+  <li><strong>API Server</strong> (NestJS + TypeScript)</li>
+  <li><strong>Mobile App</strong> (React Native - in development)</li>
+</ul>
+
+<h2 id="quick-start">Quick Start</h2>
+
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+  <li>Node.js 20.11.0+</li>
+  <li>npm 10.2.4+</li>
+</ul>
+
+<h3 id="installation">Installation</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Install dependencies</span>
+npm <span class="nb">install</span>
+
+<span class="c"># Start development servers</span>
+npm run dev
+</code></pre></div></div>
+
+<p>This will start:</p>
+<ul>
+  <li>Web app: http://localhost:3000</li>
+  <li>API server: http://localhost:3001</li>
+</ul>
+
+<h3 id="project-structure">Project Structure</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>apps/
+├── web/          # Next.js frontend
+├── api/          # NestJS backend
+└── mobile/       # React Native app
+packages/         # Shared packages
+</code></pre></div></div>
+
+<h2 id="api-endpoints">API Endpoints</h2>
+
+<h3 id="authentication">Authentication</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">POST /auth/login</code> - User login</li>
+  <li><code class="language-plaintext highlighter-rouge">POST /auth/register-by-invite</code> - Register with invite token</li>
+  <li><code class="language-plaintext highlighter-rouge">POST /auth/update-profile</code> - Update user profile type</li>
+</ul>
+
+<h3 id="invites">Invites</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">POST /invites</code> - Create invitation link</li>
+</ul>
+
+<h3 id="agents">Agents</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">GET /agents</code> - List all agents</li>
+  <li><code class="language-plaintext highlighter-rouge">POST /agents</code> - Create new agent</li>
+  <li><code class="language-plaintext highlighter-rouge">GET /agents/:id</code> - Get agent details</li>
+</ul>
+
+<h3 id="deals">Deals</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">GET /deals</code> - List all deals</li>
+  <li><code class="language-plaintext highlighter-rouge">POST /deals</code> - Create new deal</li>
+  <li><code class="language-plaintext highlighter-rouge">GET /deals/:id</code> - Get deal details</li>
+  <li><code class="language-plaintext highlighter-rouge">PATCH /deals/:id/status</code> - Update deal status</li>
+</ul>
+
+<h2 id="user-roles">User Roles</h2>
+
+<ul>
+  <li><strong>Broker</strong> - Facilitates transactions between parties</li>
+  <li><strong>Principal</strong> - Direct participant in deals</li>
+  <li><strong>Seller</strong> - Commodity provider</li>
+  <li><strong>Introducer</strong> - Connects parties for deals</li>
+  <li><strong>Buyer</strong> - Commodity purchaser</li>
+</ul>
+
+<h2 id="deal-lifecycle">Deal Lifecycle</h2>
+
+<ol>
+  <li><strong>Initiated</strong> - Deal created</li>
+  <li><strong>KYC</strong> - Know Your Customer verification</li>
+  <li><strong>Contracted</strong> - Legal agreements signed</li>
+  <li><strong>Inspection</strong> - Commodity quality verification</li>
+  <li><strong>Payment</strong> - Financial transaction</li>
+  <li><strong>Shipped</strong> - Commodity delivery</li>
+  <li><strong>Closed</strong> - Deal completed</li>
+  <li><strong>Cancelled</strong> - Deal terminated</li>
+</ol>
+
+<h2 id="security-features">Security Features</h2>
+
+<ul>
+  <li>Token-based authentication</li>
+  <li>Invite-only registration</li>
+  <li>AES-256-GCM encryption for sensitive data</li>
+  <li>Input validation and sanitization</li>
+  <li>CORS protection</li>
+</ul>
+
+<h2 id="development">Development</h2>
+
+<h3 id="scripts">Scripts</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm run dev      <span class="c"># Start all development servers</span>
+npm run build    <span class="c"># Build all applications</span>
+npm run lint     <span class="c"># Run linting</span>
+npm run clean    <span class="c"># Clean build artifacts</span>
+</code></pre></div></div>
+
+<h3 id="environment-variables">Environment Variables</h3>
+
+<p>Create <code class="language-plaintext highlighter-rouge">.env</code> files in respective app directories:</p>
+
+<p><strong>apps/web/.env.local:</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_WEB_URL=http://localhost:3000
+</code></pre></div></div>
+
+<p><strong>apps/api/.env:</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ENCRYPTION_KEY=your-32-byte-encryption-key-here
+</code></pre></div></div>
+
+<h2 id="contributing">Contributing</h2>
+
+<ol>
+  <li>Fork the repository</li>
+  <li>Create a feature branch</li>
+  <li>Make your changes</li>
+  <li>Add tests if applicable</li>
+  <li>Submit a pull request</li>
+</ol>
+
+<h2 id="license">License</h2>
+
+<p>Private - All rights reserved</p>
+
+<hr />
+
+<p>Built for secure, transparent broker chains across gold mines and refineries worldwide.</p>
+
+
+      
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.1.0/anchor.min.js" integrity="sha256-lZaRhKri35AyJSypXXs4o6OPFTbTmUoltBbDCbdzegg=" crossorigin="anonymous"></script>
+    <script>anchors.add();</script>
+  </body>
+</html>
+

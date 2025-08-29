@@ -72,6 +72,10 @@ export class UploadDocumentDto {
   type!: string;
 
   @IsString()
+  @IsOptional()
+  category?: 'mandate' | 'contract' | 'certificate' | 'proof_of_funds' | 'other';
+
+  @IsString()
   @IsNotEmpty()
   content!: string; // base64 encoded file content
 
@@ -94,10 +98,14 @@ export interface Document {
   id: string;
   name: string;
   type: string;
+  category?: 'mandate' | 'contract' | 'certificate' | 'proof_of_funds' | 'other';
   uploadedAt: string;
   uploadedBy: string;
   encryptedContent?: string;
   iv?: string;
+  aiVerificationStatus?: 'pending' | 'verified' | 'rejected' | 'redacted';
+  redactedContent?: string; // AI-redacted version
+  originalPrincipalInfo?: string; // encrypted original info that AI identified
 }
 
 export interface Deal {
@@ -221,13 +229,38 @@ export class DealsService {
       id: uuidv4(),
       name: dto.name,
       type: dto.type,
+      category: dto.category,
       uploadedAt: new Date().toISOString(),
       uploadedBy: dto.uploadedBy,
       encryptedContent: cipher,
       iv,
+      aiVerificationStatus: 'pending',
     };
+    
+    // Simulate AI verification for mandate documents
+    if (dto.category === 'mandate') {
+      // In real implementation, this would call an AI service
+      setTimeout(() => {
+        this.verifyMandateDocument(dealId, document.id);
+      }, 2000); // Simulate processing time
+    }
+    
     deal.documents.push(document);
     return deal;
+  }
+
+  private verifyMandateDocument(dealId: string, documentId: string): void {
+    const deal = this.get(dealId);
+    const document = deal.documents.find(d => d.id === documentId);
+    if (!document) return;
+
+    // Simulate AI processing that identifies and redacts principal information
+    const mockRedactedContent = document.encryptedContent?.replace(/[A-Z][a-z]+ [A-Z][a-z]+/g, '[PRINCIPAL NAME REDACTED]');
+    const mockOriginalInfo = encrypt('John Smith - Principal Seller, ABC Mining Corp');
+
+    document.aiVerificationStatus = 'redacted';
+    document.redactedContent = mockRedactedContent;
+    document.originalPrincipalInfo = mockOriginalInfo.cipher;
   }
 
   joinDealByInvite(dto: JoinDealDto): Deal {
